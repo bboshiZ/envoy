@@ -69,7 +69,10 @@ ActiveTcpListener::~ActiveTcpListener() {
   // for now. If it becomes a problem (developers hitting this assert when using debug builds) we
   // can revisit. This case, if it happens, should be benign on production builds. This case is
   // covered in ConnectionHandlerTest::RemoveListenerDuringRebalance.
-  ASSERT(num_listener_connections_ == 0);
+  // ASSERT(num_listener_connections_ == 0);
+
+  ASSERT(num_listener_connections_ == 0, fmt::format("destroyed listener {} has {} connections",
+                                                    config_->name(), numConnections()));
 }
 
 void ActiveTcpListener::removeConnection(ActiveTcpConnection& connection) {
@@ -194,8 +197,9 @@ void ActiveTcpSocket::newConnection() {
     // across both listeners.
     // TODO(mattklein123): See note in ~ActiveTcpSocket() related to making this accounting better.
     listener_.decNumConnections();
-    new_listener.value().get().incNumConnections();
-    new_listener.value().get().onAcceptWorker(std::move(socket_), false, true);
+    new_listener.value().get().onAcceptWorker(std::move(socket_), false, false);
+    // new_listener.value().get().incNumConnections();
+    // new_listener.value().get().onAcceptWorker(std::move(socket_), false, true);
   } else {
     // Set default transport protocol if none of the listener filters did it.
     if (socket_->detectedTransportProtocol().empty()) {
